@@ -1,9 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Algorithms
 {
     public static class AlgorithmsForTask
     {
+        private static long _time;
+
+        private static Stopwatch _watch = new Stopwatch();
+
         #region RootNewton
 
         /// <summary>
@@ -29,513 +36,250 @@ namespace Algorithms
                 return number;
             }
 
-            var x0 = number / degree;
+            var leftValue = number / degree;
 
-            var x1 = (1.0 / degree) * ((degree - 1) * x0 + number / Math.Pow(x0, degree - 1));
+            var rightValue = (1.0 / degree) * ((degree - 1) * leftValue + number / Math.Pow(leftValue, degree - 1));
 
-            while (Math.Abs(x1 - x0) > accuracy)
+            while (Math.Abs(rightValue - leftValue) > accuracy)
             {
-                x0 = x1;
-                x1 = (1.0 / degree) * ((degree - 1) * x0 + number / Math.Pow(x0, degree - 1));
+                leftValue = rightValue;
+                rightValue = (1.0 / degree) * ((degree - 1) * leftValue + number / Math.Pow(leftValue, degree - 1));
             }
 
-            int flag = 0;
-
-            do
-            {
-                accuracy *= 10;
-                flag++;
-            }
-            while (accuracy > 0);
-
-            return Math.Round(x1, flag - 1);
+            return rightValue;
         }
 
         #endregion RootNewton
 
-        #region SortMassive
+        #region BinaryInsert
+
 
         /// <summary>
-        /// Method for sorting rows of an array by increasing the sum of elements in a row
+        /// Method for binary insert interval bites
         /// </summary>
-        /// <param name="inputArray">input array</param>
-        public static void SortSummElementAscendArray(int [,] inputArray)
+        /// <param name="numberDestination"> distination number</param>
+        /// <param name="numberSource"> source number</param>
+        /// <param name="indexStartInsert"> start index inserts interval</param>
+        /// <param name="indexEndInsert">end index inserts interval</param>
+        /// <returns>rezalt number after insert</returns>
+        public static int BinaryInsertNumber(int numberDestination, int numberSource, int indexStartInsert, int indexEndInsert)
         {
-            if (inputArray == null)
+            ValidateNumberTypeInt(numberDestination, numberSource, indexStartInsert, indexEndInsert);
+
+            if (indexEndInsert < indexStartInsert)
             {
-                throw new ArgumentNullException($"Argument {nameof(inputArray)} is null");
+                throw new ArgumentOutOfRangeException($"Index start insert must be less or equals index end insert");
             }
 
-            if (inputArray.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException($"Argument`s {nameof(inputArray)} length is 0");
-            }
+            int changeOneToZeroDestination = numberDestination;
 
-            int summ1 = 0, summ2 = 0, depthSort = inputArray.GetLength(0);
-            while(depthSort != 1)
+            for (int i = indexStartInsert; i <= indexEndInsert; i++)
             {
-                for (int i = 0; i < depthSort; ++i)
+                if ((numberDestination & (1 << i)) != (numberSource & (1 << (i - indexStartInsert))))
                 {
-                    summ2 = FindSummElement(inputArray, i);
-
-                    if (summ1 != 0 && summ2 < summ1)
+                    if ((numberSource & (1 << (i - indexStartInsert))) == 0)
                     {
-                        ChangeElementInRow(inputArray, i);
+                        changeOneToZeroDestination ^= (1 << i);
                     }
-
-                    summ1 = summ2;
-
-                    summ2 = 0;
+                    else
+                    {
+                        changeOneToZeroDestination |= (1 << i);
+                    }
                 }
-
-                depthSort--;
-                summ1 = summ2 = 0;
             }
-            
+
+            return changeOneToZeroDestination;
         }
 
         /// <summary>
-        /// Method for sorting rows of an array by descending the sum of elements in a row
+        /// Method for validate number type int
+        /// </summary>
+        /// <param name="numberArrayForValidate">array params type int</param>
+        public static void ValidateNumberTypeInt(params int[] numberArrayForValidate)
+        {
+            for (int i = 0; i < numberArrayForValidate.Length; i++)
+            {
+                if (numberArrayForValidate[i] < 0 || numberArrayForValidate[i] < int.MinValue || numberArrayForValidate[i] > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException($"Argument`s with index {i} is not valid");
+                }
+            }
+        }
+
+        #endregion BinaryInsert
+
+        #region FindBiggerNumber
+
+        /// <summary>
+        /// Method for search next bigger number
+        /// </summary>
+        /// <param name="inputNumber">input number</param>
+        /// <param name="_time">variabe for write time run method</param>
+        /// <returns>output number</returns>
+        public static int FindNextBiggerNumber(int inputNumber, out long _time)
+        {
+            ValidateNumberTypeInt(inputNumber);
+
+            _watch.Reset();
+
+            _watch.Start();
+
+            List<int> listForRezalt = new List<int>();
+
+            var number = inputNumber;
+
+            while (number != 0)
+            {
+                listForRezalt.Insert(0, number % 10);
+
+                number /= 10;
+            }
+
+            var inputArray = listForRezalt.ToArray();
+
+            SortForFindNextBiggerNumber(ref inputArray);
+
+            var rezaltString = string.Empty;
+
+            for (int i = 0; i < inputArray.Length; i++)
+            {
+                rezaltString = $"{rezaltString}{inputArray[i]}";
+            }
+
+            var rezalt = Convert.ToInt32(rezaltString);
+
+            if(rezalt <= inputNumber)
+            {
+                _watch.Stop();
+
+                _time = _watch.ElapsedMilliseconds;
+
+                return -1;
+            }
+
+            _watch.Stop();
+
+            _time = _watch.ElapsedMilliseconds;
+
+            return rezalt;
+        }
+
+        /// <summary>
+        /// Method for search next bigger number with tuple
+        /// </summary>
+        /// <param name="inputNumber">input number</param>
+        /// <param name="_time">variabe for write time run method</param>
+        /// <returns>output number</returns>
+        public static Tuple<int, long> FindNextBiggerNumberTuple(int inputNumber)
+        {
+            ValidateNumberTypeInt(inputNumber);
+
+            _watch.Reset();
+
+            _watch.Start();
+
+            List<int> listForRezalt = new List<int>();
+
+            var number = inputNumber;
+
+            while (number != 0)
+            {
+                listForRezalt.Insert(0, number % 10);
+
+                number /= 10;
+            }
+
+            var inputArray = listForRezalt.ToArray();
+
+            SortForFindNextBiggerNumber(ref inputArray);
+
+            var rezaltString = string.Empty;
+
+            for (int i = 0; i < inputArray.Length; i++)
+            {
+                rezaltString = $"{rezaltString}{inputArray[i]}";
+            }
+
+            var rezalt = Convert.ToInt32(rezaltString);
+
+            var tuple = new Tuple<int, long>(rezalt, _time);
+
+            if (rezalt <= inputNumber)
+            {
+                _watch.Stop();
+
+                _time = _watch.ElapsedMilliseconds;
+
+                return new Tuple<int, long>(-1, _time);
+            }
+
+            _watch.Stop();
+
+            _time = _watch.ElapsedMilliseconds;
+
+            return new Tuple<int, long>(rezalt, _time);
+        }
+
+        /// <summary>
+        /// Method for sort array for find next bigger number
         /// </summary>
         /// <param name="inputArray">input array</param>
-        public static void SortSummElementDescendArray(int[,] inputArray)
+        private static void SortForFindNextBiggerNumber(ref int[] inputArray)
         {
-            if (inputArray == null)
+            for(int i = inputArray.Length-1; i >= 1; i--)
             {
-                throw new ArgumentNullException($"Argument {nameof(inputArray)} is null");
-            }
+                if(inputArray[i] > inputArray[i - 1])
+                {
+                    Swap(ref inputArray[i - 1], ref inputArray[i]);
 
-            if (inputArray.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException($"Argument`s {nameof(inputArray)} length is 0");
-            }
+                    if((inputArray.Length - 1) - (i - 1) > 1)
+                    {
+                        var arrayHelper = inputArray.Skip(i).ToArray();
 
-            int summ1 = 0, summ2 = 0, depthSort = inputArray.GetLength(0);
+                        SortArrayAscend(ref arrayHelper);
+
+                        Array.Copy(arrayHelper, 0, inputArray, i, arrayHelper.Length);
+                    }
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Helper method for sort array ascend
+        /// </summary>
+        /// <param name="inputArray"></param>
+        private static void SortArrayAscend(ref int[] inputArray)
+        {
+            int depthSort = inputArray.Length;
 
             while (depthSort != 1)
             {
-                for (int i = 0; i < inputArray.GetLength(0); ++i)
+                for (int i = 0; i < depthSort-1; ++i)
                 {
-                    summ2 = FindSummElement(inputArray, i);
-
-                    if (summ1 != 0 && summ2 > summ1)
+                    if (inputArray[i] > inputArray[i+1])
                     {
-                        ChangeElementInRow(inputArray, i);
+                        Swap(ref inputArray[i], ref inputArray[i + 1]);
                     }
-
-                    summ1 = summ2;
-
-                    summ2 = 0;
                 }
 
                 depthSort--;
-
-                summ1 = summ2 = 0;
             }
         }
 
         /// <summary>
-        /// The method of sorting rows of an array by increasing the max values of the elements
+        /// Helper method for replacing values ​​in an array
         /// </summary>
-        /// <param name="inputArray">input array</param>
-        public static void SortMaxElementAscendArray(int[,] inputArray)
+        /// <typeparam name="T"></typeparam>
+        /// <param name="leftElement">left element</param>
+        /// <param name="rightElement">right element</param>
+        private static void Swap<T>(ref T leftElement, ref T rightElement)
         {
-            if (inputArray == null)
-            {
-                throw new ArgumentNullException($"Argument {nameof(inputArray)} is null");
-            }
-
-            if (inputArray.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException($"Argument`s {nameof(inputArray)} length is 0");
-            }
-
-            int maxElement1 = 0, maxElement2 = 0, depthSort = inputArray.GetLength(0);
-
-            while (depthSort != 1)
-            {
-                for (int i = 0; i < inputArray.GetLength(0); ++i)
-                {
-                    maxElement2 = FindMaxElement(inputArray, i);
-
-                    if (maxElement1 != 0 && maxElement2 < maxElement1)
-                    {
-                        ChangeElementInRow(inputArray, i);
-                    }
-                    maxElement1 = maxElement2;
-                    maxElement2 = 0;
-                }
-
-                depthSort--;
-
-                maxElement1 = maxElement2 = 0;
-            }
+            var helper = leftElement;
+            leftElement = rightElement;
+            rightElement = helper;
         }
-
-        /// <summary>
-        /// The method of sorting rows of an array by decreasing the max values of the elements
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        public static void SortMaxElementDescendArray(int[,] inputArray)
-        {
-            if (inputArray == null)
-            {
-                throw new ArgumentNullException($"Argument {nameof(inputArray)} is null");
-            }
-
-            if (inputArray.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException($"Argument`s {nameof(inputArray)} length is 0");
-            }
-
-            int maxElement1 = 0, maxElement2 = 0, depthSort = inputArray.GetLength(0);
-
-            while (depthSort != 1)
-            {
-                for (int i = 0; i < inputArray.GetLength(0); ++i)
-                {
-                    maxElement2 = FindMaxElement(inputArray, i);
-
-                    if (maxElement1 != 0 && maxElement2 > maxElement1)
-                    {
-                        ChangeElementInRow(inputArray, i);
-                    }
-                    maxElement1 = maxElement2;
-                    maxElement2 = 0;
-                }
-
-                depthSort--;
-
-                maxElement1 = maxElement2 = 0;
-            }
-        }
-
-        /// <summary>
-        /// The method of sorting rows of an array by increasing the max values of the elements
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        public static void SortMinElementAscendArray(int[,] inputArray)
-        {
-            if (inputArray == null)
-            {
-                throw new ArgumentNullException($"Argument {nameof(inputArray)} is null");
-            }
-
-            if (inputArray.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException($"Argument`s {nameof(inputArray)} length is 0");
-            }
-
-            int minElement1 = 0, minElement2 = 0, depthSort = inputArray.GetLength(0);
-
-            while (depthSort != 1)
-            {
-                for (int i = 0; i < inputArray.GetLength(0); ++i)
-                {
-                    minElement2 = FindMinElement(inputArray, i);
-
-                    if (minElement1 != 0 && minElement2 < minElement1)
-                    {
-                        ChangeElementInRow(inputArray, i);
-                    }
-                    minElement1 = minElement2;
-                    minElement2 = 0;
-                }
-
-                depthSort--;
-
-                minElement1 = minElement2 = 0;
-            }
-        }
-
-        /// <summary>
-        /// The method of sorting rows of an array by decreasing the max values of the elements
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        public static void SortMinElementDescendArray(int[,] inputArray)
-        {
-            if (inputArray == null)
-            {
-                throw new ArgumentNullException($"Argument {nameof(inputArray)} is null");
-            }
-
-            if (inputArray.Length == 0)
-            {
-                throw new ArgumentOutOfRangeException($"Argument`s {nameof(inputArray)} length is 0");
-            }
-
-            int minElement1 = 0, minElement2 = 0, depthSort = inputArray.GetLength(0);
-            while (depthSort != 1)
-            {
-                for (int i = 0; i < inputArray.GetLength(0); ++i)
-                {
-                    minElement2 = FindMinElement(inputArray, i);
-
-                    if (minElement1 != 0 && minElement2 > minElement1)
-                    {
-                        ChangeElementInRow(inputArray, i);
-                    }
-                    minElement1 = minElement2;
-                    minElement2 = 0;
-                }
-
-                depthSort--;
-
-                minElement1 = minElement2 = 0;
-            }
-        }
-
-        /// <summary>
-        /// Method for change of element in the row
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        /// <param name="indexRowSource">index row source</param>
-        /// <param name="indexRowDestination">index row source</param>
-        /// <returns>value summ elements</returns>
-        public static void ChangeElementInRow(int[,] inputArray, int indexRowSource)
-        {
-            for (int j = 0; j < inputArray.GetLength(1); ++j)
-            {
-                var number = inputArray[indexRowSource - 1, j];
-                inputArray[indexRowSource - 1, j] = inputArray[indexRowSource, j];
-                inputArray[indexRowSource, j] = number;
-            }
-        }
-
-        /// <summary>
-        /// Method for summ of element in the row
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        /// <param name="indexRow">index row for search</param>
-        /// <returns>value summ elements</returns>
-        public static int FindSummElement(int[,] inputArray, int indexRow)
-        {
-            var summElement = 0;
-
-            for (int j = 0; j < inputArray.GetLength(1); ++j)
-            {
-                summElement += inputArray[indexRow, j];
-            }
-
-            return summElement;
-        }
-
-        /// <summary>
-        /// Method for search max element in the row
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        /// <param name="indexRow">index row for search</param>
-        /// <returns>value max element</returns>
-        public static int FindMaxElement(int[,] inputArray, int indexRow)
-        {
-            var maxElement = inputArray[indexRow, 0];
-
-            for (int j = 1; j < inputArray.GetLength(1); ++j)
-            {
-                if(inputArray[indexRow, j] > maxElement)
-                {
-                    maxElement = inputArray[indexRow, j];
-                }
-            }
-
-            return maxElement;
-        }
-
-        /// <summary>
-        /// Method for search min element in the row
-        /// </summary>
-        /// <param name="inputArray">input array</param>
-        /// <param name="indexRow">index row for search</param>
-        /// <returns>value min element</returns>
-        public static int FindMinElement(int[,] inputArray, int indexRow)
-        {
-            var minElement = inputArray[indexRow, 0];
-
-            for (int j = 1; j < inputArray.GetLength(1); ++j)
-            {
-                if (inputArray[indexRow, j] < minElement)
-                {
-                    minElement = inputArray[indexRow, j];
-                }
-            }
-
-            return minElement;
-        }
-
-        #endregion SortMassive
-
-        #region SortMassiveHelper
-        /// <summary>
-        /// Method for check work method SortSummElementAscendArray
-        /// </summary>
-        /// <param name="inputArray"></param>
-        /// <returns></returns>
-        public static bool SortSummAscendHelper(int[,] inputArray)
-        {
-            int flagStepTrue = 0, summ1 = 0, summ2 = 0;
-
-            for (int i = 0; i < inputArray.GetLength(0); ++i)
-            {
-                summ2 = FindSummElement(inputArray, i);
-
-                if (summ1 != 0 && summ2 > summ1)
-                {
-                    flagStepTrue++;
-                }
-
-                summ1 = summ2;
-
-                summ2 = 0;
-            }
-
-            return flagStepTrue == inputArray.GetLength(0) - 1;
-        }
-
-        /// <summary>
-        /// Method for check work method SortSummElementDescendArray
-        /// </summary>
-        /// <param name="inputArray"></param>
-        /// <returns></returns>
-        public static bool SortSummDescendHelper(int[,] inputArray)
-        {
-            int flagStepTrue = 0, summ1 = 0, summ2 = 0;
-
-            for (int i = 0; i < inputArray.GetLength(0); ++i)
-            {
-                summ2 = FindSummElement(inputArray, i);
-
-                if (summ1 != 0 && summ2 < summ1)
-                {
-                    flagStepTrue++;
-                }
-
-                summ1 = summ2;
-
-                summ2 = 0;
-            }
-
-            return flagStepTrue == inputArray.GetLength(0) - 1;
-        }
-
-        /// <summary>
-        /// Method for check work method SortMaxElementAscendArray
-        /// </summary>
-        /// <param name="inputArray"></param>
-        /// <returns></returns>
-        public static bool SortMaxElementAscendHelper(int[,] inputArray)
-        {
-            int flagStepTrue = 0, maxElement1 = 0, maxElement2 = 0;
-
-            for (int i = 0; i < inputArray.GetLength(0); ++i)
-            {
-                maxElement2 = FindMaxElement(inputArray, i);
-
-                if (maxElement1 != 0 && maxElement2 > maxElement1)
-                {
-                    flagStepTrue++;
-                }
-
-                maxElement1 = maxElement2;
-
-                maxElement2 = 0;
-            }
-
-            return flagStepTrue == inputArray.GetLength(0) - 1;
-        }
-
-        /// <summary>
-        /// Method for check work method SortMaxElementDescendArray
-        /// </summary>
-        /// <param name="inputArray"></param>
-        /// <returns></returns>
-        public static bool SortMaxElementDescendHelper(int[,] inputArray)
-        {
-            int flagStepTrue = 0, maxElement1 = 0, maxElement2 = 0;
-
-            for (int i = 0; i < inputArray.GetLength(0); ++i)
-            {
-                maxElement2 = FindMaxElement(inputArray, i);
-
-                if (maxElement1 != 0 && maxElement2 < maxElement1)
-                {
-                    flagStepTrue++;
-                }
-
-                maxElement1 = maxElement2;
-
-                maxElement2 = 0;
-            }
-
-            return flagStepTrue == inputArray.GetLength(0) - 1;
-        }
-
-        /// <summary>
-        /// Method for check work method SortMinElementAscendArray
-        /// </summary>
-        /// <param name="inputArray"></param>
-        /// <returns></returns>
-        public static bool SortMinElementAscendHelper(int[,] inputArray)
-        {
-            int flagStepTrue = 0, minElement1 = 0, minElement2 = 0;
-
-            for (int i = 0; i < inputArray.GetLength(0); ++i)
-            {
-                minElement2 = FindMinElement(inputArray, i);
-
-                if (minElement1 != 0 && minElement2 > minElement1)
-                {
-                    flagStepTrue++;
-                }
-
-                minElement1 = minElement2;
-
-                minElement2 = 0;
-            }
-
-            return flagStepTrue == inputArray.GetLength(0) - 1;
-        }
-
-        /// <summary>
-        /// Method for check work method SortMinElementDescendArray
-        /// </summary>
-        /// <param name="inputArray"></param>
-        /// <returns></returns>
-        public static bool SortMinElementDescendHelper(int[,] inputArray)
-        {
-            int flagStepTrue = 0, minElement1 = 0, minElement2 = 0;
-
-            for (int i = 0; i < inputArray.GetLength(0); ++i)
-            {
-                minElement2 = FindMinElement(inputArray, i);
-
-                if (minElement1 != 0 && minElement2 < minElement1)
-                {
-                    flagStepTrue++;
-                }
-
-                minElement1 = minElement2;
-
-                minElement2 = 0;
-            }
-
-            return flagStepTrue == inputArray.GetLength(0) - 1;
-        }
-
-        /// <summary>
-        /// Method print in Console
-        /// </summary>
-        /// <param name="mas"></param>
-        public static void Print(int[,] mas)
-        {
-            for (int i = 0; i < mas.GetLength(0); ++i, Console.WriteLine())
-            {
-                for (int j = 0; j < mas.GetLength(1); ++j)
-                {
-                    Console.Write("{0,5}", mas[i, j]);
-                }
-            }
-        }
-
-        #endregion SortMassiveHelper
+    
+        #endregion FindBiggerNumber
     }
 }
