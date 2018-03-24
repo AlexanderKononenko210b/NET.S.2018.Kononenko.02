@@ -5,11 +5,9 @@ using System.Linq;
 
 namespace Algorithms
 {
-    public static class AlgorithmsForTask
+    public static class AlgorithmsForTasks
     {
-        private static long _time;
-
-        private static Stopwatch _watch = new Stopwatch();
+        const int BASE_DECIMAL = 10;
 
         #region RootNewton
 
@@ -22,7 +20,7 @@ namespace Algorithms
         /// <returns>rezalt</returns>
         public static double FindNthRoot(double number, int degree, double accuracy)
         {
-            if (degree < 0 || degree < int.MinValue || degree > int.MaxValue || accuracy < 0)
+            if (degree < 0 || accuracy < 0)
             {
                 throw new ArgumentOutOfRangeException($"Argument`s {nameof(degree)} is not valid");
             }
@@ -99,7 +97,7 @@ namespace Algorithms
         {
             for (int i = 0; i < numberArrayForValidate.Length; i++)
             {
-                if (numberArrayForValidate[i] < 0 || numberArrayForValidate[i] < int.MinValue || numberArrayForValidate[i] > int.MaxValue)
+                if (numberArrayForValidate[i] < 0)
                 {
                     throw new ArgumentOutOfRangeException($"Argument`s with index {i} is not valid");
                 }
@@ -108,123 +106,124 @@ namespace Algorithms
 
         #endregion BinaryInsert
 
-        #region FindBiggerNumber
+        #region FindNextBiggerNumber
 
         /// <summary>
-        /// Method for search next bigger number
+        /// Method for search next bigger number with out parametr
         /// </summary>
         /// <param name="inputNumber">input number</param>
-        /// <param name="_time">variabe for write time run method</param>
+        /// <param name="time">parameter for write time run method</param>
         /// <returns>output number</returns>
-        public static int FindNextBiggerNumber(int inputNumber, out long _time)
+        public static int FindNextBiggerNumberReference(int inputNumber, out long time)
         {
+            Stopwatch stopwatch = new Stopwatch();
+
+            stopwatch.Start();
+
             ValidateNumberTypeInt(inputNumber);
 
-            _watch.Reset();
+            var result = FindNextBiggerNumber(inputNumber);
 
-            _watch.Start();
-
-            List<int> listForRezalt = new List<int>();
-
-            var number = inputNumber;
-
-            while (number != 0)
+            if (result <= inputNumber)
             {
-                listForRezalt.Insert(0, number % 10);
+                stopwatch.Stop();
 
-                number /= 10;
-            }
-
-            var inputArray = listForRezalt.ToArray();
-
-            SortForFindNextBiggerNumber(ref inputArray);
-
-            var rezaltString = string.Empty;
-
-            for (int i = 0; i < inputArray.Length; i++)
-            {
-                rezaltString = $"{rezaltString}{inputArray[i]}";
-            }
-
-            var rezalt = Convert.ToInt32(rezaltString);
-
-            if(rezalt <= inputNumber)
-            {
-                _watch.Stop();
-
-                _time = _watch.ElapsedMilliseconds;
+                time = stopwatch.ElapsedMilliseconds;
 
                 return -1;
             }
 
-            _watch.Stop();
+            stopwatch.Stop();
 
-            _time = _watch.ElapsedMilliseconds;
+            time = stopwatch.ElapsedMilliseconds;
 
-            return rezalt;
+            return result;
         }
 
         /// <summary>
         /// Method for search next bigger number with tuple
         /// </summary>
         /// <param name="inputNumber">input number</param>
-        /// <param name="_time">variabe for write time run method</param>
-        /// <returns>output number</returns>
-        public static Tuple<int, long> FindNextBiggerNumberTuple(int inputNumber)
+        /// <returns>tuple where first parameter - result calc, second parameter - time calc</returns>
+        public static (int, long) FindNextBiggerNumberTuple(int inputNumber)
         {
-            ValidateNumberTypeInt(inputNumber);
+            Stopwatch stopwatch = new Stopwatch();
 
-            _watch.Reset();
+            stopwatch.Start();
 
-            _watch.Start();
+            var result = FindNextBiggerNumber(inputNumber);
 
+            if (result <= inputNumber)
+            {
+                stopwatch.Stop();
+
+                return (-1, stopwatch.ElapsedMilliseconds);
+            }
+
+            stopwatch.Stop();
+
+            return (result, stopwatch.ElapsedMilliseconds);
+        }
+
+        /// <summary>
+        /// Method for find next bigger number
+        /// </summary>
+        /// <param name="inputNumber">input number</param>
+        /// <returns>output number after search</returns>
+        public static int FindNextBiggerNumber(int inputNumber)
+        {
+            var inputArray = GetArrayFromNumber(inputNumber);
+
+            SortForFindNextBiggerNumber(inputArray);
+
+            return GetNumberFromArray(inputArray);
+        }
+
+        /// <summary>
+        /// Method for get array number from number type int
+        /// </summary>
+        /// <param name="inputNumber">input number</param>
+        /// <returns>result array</returns>
+        private static int[] GetArrayFromNumber(int inputNumber)
+        {
             List<int> listForRezalt = new List<int>();
 
-            var number = inputNumber;
-
-            while (number != 0)
+            while (inputNumber != 0)
             {
-                listForRezalt.Insert(0, number % 10);
+                listForRezalt.Insert(0, inputNumber % 10);
 
-                number /= 10;
+                inputNumber /= 10;
             }
 
-            var inputArray = listForRezalt.ToArray();
+            return listForRezalt.ToArray();
+        }
 
-            SortForFindNextBiggerNumber(ref inputArray);
+        /// <summary>
+        /// Method for get number from array type int
+        /// </summary>
+        /// <param name="inputArray">input array</param>
+        /// <returns>result number</returns>
+        private static int GetNumberFromArray(int[] inputArray)
+        {
+            var result = 0;
 
-            var rezaltString = string.Empty;
+            var degree = 1;
 
-            for (int i = 0; i < inputArray.Length; i++)
+            for(int i = inputArray.Length-1; i >= 0; i--)
             {
-                rezaltString = $"{rezaltString}{inputArray[i]}";
+                result += inputArray[i] * degree;
+
+                degree *= BASE_DECIMAL;
             }
 
-            var rezalt = Convert.ToInt32(rezaltString);
-
-            var tuple = new Tuple<int, long>(rezalt, _time);
-
-            if (rezalt <= inputNumber)
-            {
-                _watch.Stop();
-
-                _time = _watch.ElapsedMilliseconds;
-
-                return new Tuple<int, long>(-1, _time);
-            }
-
-            _watch.Stop();
-
-            _time = _watch.ElapsedMilliseconds;
-
-            return new Tuple<int, long>(rezalt, _time);
+            return result;
         }
 
         /// <summary>
         /// Method for sort array for find next bigger number
         /// </summary>
         /// <param name="inputArray">input array</param>
-        private static void SortForFindNextBiggerNumber(ref int[] inputArray)
+        private static void SortForFindNextBiggerNumber(int[] inputArray)
         {
             for(int i = inputArray.Length-1; i >= 1; i--)
             {
@@ -236,7 +235,7 @@ namespace Algorithms
                     {
                         var arrayHelper = inputArray.Skip(i).ToArray();
 
-                        SortArrayAscend(ref arrayHelper);
+                        SortArrayAscend(arrayHelper);
 
                         Array.Copy(arrayHelper, 0, inputArray, i, arrayHelper.Length);
                     }
@@ -248,8 +247,8 @@ namespace Algorithms
         /// <summary>
         /// Helper method for sort array ascend
         /// </summary>
-        /// <param name="inputArray"></param>
-        private static void SortArrayAscend(ref int[] inputArray)
+        /// <param name="inputArray">helper array consist element after replace number</param>
+        private static void SortArrayAscend(int[] inputArray)
         {
             int depthSort = inputArray.Length;
 
@@ -280,6 +279,6 @@ namespace Algorithms
             rightElement = helper;
         }
     
-        #endregion FindBiggerNumber
+        #endregion FindNextBiggerNumber
     }
 }
